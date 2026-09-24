@@ -2,6 +2,8 @@
 
 **Find channel listing incidents, prioritize them with a transparent commerce-economics proxy, assign a human fix, and observe whether the issue disappears in the next complete snapshot.** This is the open-source core of **A2Z Commerce Command**: a local pilot for one USD merchant, country, reporting context, language, and feed label. It includes read-only Shopify and Google Merchant API capture, a SQLite operator desk, an optional Merchant Profit OS economics adapter, and an offline dashboard. The connectors are implemented and tested with mocked API responses; they have **not** been exercised against a merchant account in this repository. There is no webhook listener, hosted service, or automated platform write.
 
+**Start with the [Shopify and Google Merchant Center product-diagnostics guide](docs/SHOPIFY_GOOGLE_MERCHANT_DIAGNOSTICS.md)** for the exact questions this tool can answer, a two-snapshot example, checked-in verifiable reports, and the limits of each finding.
+
 ```bash
 PYTHONPATH=src python3 -m commerce_incident_network run fixtures/demo/day1 outputs/day1 --as-of 2026-09-24T12:00:00Z
 PYTHONPATH=src python3 -m commerce_incident_network run fixtures/demo/day2 outputs/day2 --as-of 2026-09-25T12:00:00Z --previous outputs/day1/report.json

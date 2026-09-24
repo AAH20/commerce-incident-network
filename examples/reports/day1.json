@@ -1,0 +1,70 @@
+{
+  "as_of": "2026-09-24T12:00:00Z",
+  "claim_limits": "Daily margin priority is historical velocity times modeled unit margin; it is not lost or recovered revenue. Resolved means absent in a newer complete snapshot, not verified root cause or incremental sales.",
+  "counts": {
+    "channel": 3,
+    "economics": 3,
+    "mapping": 3,
+    "storefront": 3
+  },
+  "incidents": [
+    {
+      "daily_margin_priority_proxy_usd": "24.00",
+      "detail": "Channel reports disapproved",
+      "id": "4a33e27a5ab3f114a3b6",
+      "kind": "channel_disapproved",
+      "offer_id": "book-a",
+      "recommendation": "Review channel issue details and correct the source data.",
+      "severity": "high",
+      "sku": "BOOK-A",
+      "state": "new"
+    },
+    {
+      "daily_margin_priority_proxy_usd": "1.60",
+      "detail": "Storefront quantity 0; channel in_stock",
+      "id": "5ddb0ad79f5efee8a411",
+      "kind": "availability_mismatch",
+      "offer_id": "lamp-c",
+      "recommendation": "Review inventory and channel availability before changing either.",
+      "severity": "high",
+      "sku": "LAMP-C",
+      "state": "new"
+    },
+    {
+      "daily_margin_priority_proxy_usd": "7.00",
+      "detail": "Storefront USD 18.00; channel USD 20.00",
+      "id": "29c1593c4100b2f31b21",
+      "kind": "price_mismatch",
+      "offer_id": "mug-b",
+      "recommendation": "Review the storefront and channel price before changing either.",
+      "severity": "medium",
+      "sku": "MUG-B",
+      "state": "new"
+    }
+  ],
+  "schema_version": "1.1",
+  "scope": {
+    "content_language": "en",
+    "country": "US",
+    "currency": "USD",
+    "feed_label": "US",
+    "google_account_id": "000000",
+    "merchant_id": "fictional-demo",
+    "reporting_context": "SHOPPING_ADS",
+    "shop_domain": "fictional-shop.myshopify.com"
+  },
+  "snapshot_at": "2026-09-24T10:00:00Z",
+  "source_sha256": {
+    "channel.csv": "86be76cf3f69788ad894243e95bdb377fbe74c5b6a5c1f752a48f3f52bf0ab73",
+    "economics.csv": "2b9ed73ad478c7145907ef621c28fe66ea61da6c74e7380dd609dae07fe8f7a6",
+    "manifest.json": "e255c8020cc7bd2e713ed57f343d37a0803796d06740a6b841b9ff6b09c98d79",
+    "mapping.csv": "742b25c1c6d7b8a973ed3b38196b74cae9f5219a390335a34747930621b35be5",
+    "storefront.csv": "c879a938ba08a34b415982732f0356d6ef1c14fcbdaf549d33c0d8d5d1439dc7"
+  },
+  "summary": {
+    "active": 3,
+    "new": 3,
+    "ongoing": 0,
+    "resolved_observed": 0
+  }
+}

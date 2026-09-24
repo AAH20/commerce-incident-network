@@ -1,0 +1,70 @@
+{
+  "as_of": "2026-09-25T12:00:00Z",
+  "claim_limits": "Daily margin priority is historical velocity times modeled unit margin; it is not lost or recovered revenue. Resolved means absent in a newer complete snapshot, not verified root cause or incremental sales.",
+  "counts": {
+    "channel": 3,
+    "economics": 3,
+    "mapping": 3,
+    "storefront": 3
+  },
+  "incidents": [
+    {
+      "daily_margin_priority_proxy_usd": "1.60",
+      "detail": "Storefront quantity 0; channel in_stock",
+      "id": "5ddb0ad79f5efee8a411",
+      "kind": "availability_mismatch",
+      "offer_id": "lamp-c",
+      "recommendation": "Review inventory and channel availability before changing either.",
+      "severity": "high",
+      "sku": "LAMP-C",
+      "state": "ongoing"
+    },
+    {
+      "daily_margin_priority_proxy_usd": "24.00",
+      "detail": "Absent in newer complete snapshots; operator should confirm root cause",
+      "id": "4a33e27a5ab3f114a3b6",
+      "kind": "channel_disapproved",
+      "offer_id": "book-a",
+      "recommendation": "Review channel issue details and correct the source data.",
+      "severity": "high",
+      "sku": "BOOK-A",
+      "state": "resolved_observed"
+    },
+    {
+      "daily_margin_priority_proxy_usd": "7.00",
+      "detail": "Absent in newer complete snapshots; operator should confirm root cause",
+      "id": "29c1593c4100b2f31b21",
+      "kind": "price_mismatch",
+      "offer_id": "mug-b",
+      "recommendation": "Review the storefront and channel price before changing either.",
+      "severity": "medium",
+      "sku": "MUG-B",
+      "state": "resolved_observed"
+    }
+  ],
+  "schema_version": "1.1",
+  "scope": {
+    "content_language": "en",
+    "country": "US",
+    "currency": "USD",
+    "feed_label": "US",
+    "google_account_id": "000000",
+    "merchant_id": "fictional-demo",
+    "reporting_context": "SHOPPING_ADS",
+    "shop_domain": "fictional-shop.myshopify.com"
+  },
+  "snapshot_at": "2026-09-25T10:00:00Z",
+  "source_sha256": {
+    "channel.csv": "e1c65a385c81666e1056b9b166dc427d670dfc96a92a22e4985b0f11a19965f8",
+    "economics.csv": "2b9ed73ad478c7145907ef621c28fe66ea61da6c74e7380dd609dae07fe8f7a6",
+    "manifest.json": "88219150cc652a39931b9eb41f3660e198f64a10152231dd041c754742d8bc57",
+    "mapping.csv": "742b25c1c6d7b8a973ed3b38196b74cae9f5219a390335a34747930621b35be5",
+    "storefront.csv": "c879a938ba08a34b415982732f0356d6ef1c14fcbdaf549d33c0d8d5d1439dc7"
+  },
+  "summary": {
+    "active": 1,
+    "new": 0,
+    "ongoing": 1,
+    "resolved_observed": 2
+  }
+}
