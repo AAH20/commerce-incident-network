@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 HEADERS = {
     "mapping": ("sku", "offer_id"),
     "storefront": ("sku", "price_usd", "inventory_quantity", "published"),
@@ -69,8 +69,8 @@ def _table(folder: Path, name: str) -> tuple[list[dict[str, str]], str]:
             rows = list(reader)
     except (OSError, UnicodeError) as exc:
         raise DataError(f"Cannot read {path}: {exc}") from exc
-    if not rows and name != "economics":
-        raise DataError(f"{name}.csv is empty; complete snapshots are required")
+    if not rows and name == "mapping":
+        raise DataError("mapping.csv needs at least one mapped product")
     for index, row in enumerate(rows, 2):
         if None in row or any(value is None for value in row.values()):
             raise DataError(f"{name}.csv row {index} has the wrong number of columns")
@@ -87,8 +87,8 @@ def _unique(rows: list[dict[str, str]], key: str, label: str) -> dict[str, dict[
     return result
 
 
-def _incident_id(merchant: str, country: str, context: str, language: str, feed_label: str, sku: str, kind: str) -> str:
-    payload = json.dumps([merchant, country, context, language, feed_label, sku, kind], separators=(",", ":"))
+def _incident_id(merchant: str, shop_domain: str, google_account_id: str, country: str, context: str, language: str, feed_label: str, sku: str, kind: str) -> str:
+    payload = json.dumps([merchant, shop_domain, google_account_id, country, context, language, feed_label, sku, kind], separators=(",", ":"))
     return hashlib.sha256(payload.encode()).hexdigest()[:20]
 
 
@@ -99,10 +99,10 @@ def build_report(folder: Path, as_of: str, previous: dict | None = None, max_age
         manifest = json.loads(manifest_raw)
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise DataError("manifest.json must be readable JSON") from exc
-    required = {"merchant_id", "country", "reporting_context", "content_language", "feed_label", "currency", "snapshot_at", "storefront_complete", "channel_complete"}
+    required = {"merchant_id", "shop_domain", "google_account_id", "country", "reporting_context", "content_language", "feed_label", "currency", "snapshot_at", "storefront_complete", "channel_complete"}
     if set(manifest) != required:
         raise DataError(f"manifest.json needs exact fields: {', '.join(sorted(required))}")
-    for key in ("merchant_id", "country", "reporting_context", "content_language", "feed_label"):
+    for key in ("merchant_id", "shop_domain", "google_account_id", "country", "reporting_context", "content_language", "feed_label"):
         if not isinstance(manifest[key], str) or not manifest[key].strip():
             raise DataError(f"{key} is required")
     if manifest["currency"] != "USD":
@@ -139,7 +139,7 @@ def build_report(folder: Path, as_of: str, previous: dict | None = None, max_age
         _int(row["units_sold_30d"], f"economics:{sku}:units_sold_30d")
 
     if previous:
-        for key in ("merchant_id", "country", "reporting_context", "content_language", "feed_label", "currency"):
+        for key in ("merchant_id", "shop_domain", "google_account_id", "country", "reporting_context", "content_language", "feed_label", "currency"):
             if previous.get("scope", {}).get(key) != manifest[key]:
                 raise DataError(f"previous report scope differs on {key}")
         if previous.get("schema_version") != SCHEMA_VERSION or _datetime(previous["snapshot_at"], "previous snapshot_at") >= stamp:
@@ -149,7 +149,7 @@ def build_report(folder: Path, as_of: str, previous: dict | None = None, max_age
     old_active = {row["id"]: row for row in (previous or {}).get("incidents", []) if row["state"] != "resolved_observed"}
 
     def add(sku: str, offer_id: str, kind: str, detail: str) -> None:
-        identifier = _incident_id(manifest["merchant_id"], manifest["country"], manifest["reporting_context"], manifest["content_language"], manifest["feed_label"], sku, kind)
+        identifier = _incident_id(manifest["merchant_id"], manifest["shop_domain"], manifest["google_account_id"], manifest["country"], manifest["reporting_context"], manifest["content_language"], manifest["feed_label"], sku, kind)
         econ = economics.get(sku)
         estimate = None
         if econ:
@@ -190,7 +190,7 @@ def build_report(folder: Path, as_of: str, previous: dict | None = None, max_age
             incidents.append({**old, "state": "resolved_observed", "detail": "Absent in newer complete snapshots; operator should confirm root cause"})
     incidents.sort(key=lambda row: (row["state"] == "resolved_observed", row["severity"] != "high",
                                     -(Decimal(row["daily_margin_priority_proxy_usd"]) if row["daily_margin_priority_proxy_usd"] else Decimal(-1)), row["sku"], row["kind"]))
-    return {"schema_version": SCHEMA_VERSION, "scope": {key: manifest[key] for key in ("merchant_id", "country", "reporting_context", "content_language", "feed_label", "currency")},
+    return {"schema_version": SCHEMA_VERSION, "scope": {key: manifest[key] for key in ("merchant_id", "shop_domain", "google_account_id", "country", "reporting_context", "content_language", "feed_label", "currency")},
             "snapshot_at": manifest["snapshot_at"], "as_of": as_of,
             "source_sha256": hashes, "counts": {key: len(value) for key, value in tables.items()},
             "incidents": incidents, "summary": {"active": sum(i["state"] != "resolved_observed" for i in incidents),

@@ -1,4 +1,4 @@
-# Snapshot contract, v1
+# Snapshot contract, v1.1
 
 This contract supports local, read-only comparison. All files must be UTF-8 CSV with exact headers, one header row, and no additional columns. A complete snapshot means that the operator has verified all relevant mapped products were included. Setting the flags to `true` without that verification can produce false `channel_missing` or false resolutions.
 
@@ -7,6 +7,8 @@ This contract supports local, read-only comparison. All files must be UTF-8 CSV 
 ```json
 {
   "merchant_id": "your-internal-merchant-id",
+  "shop_domain": "example.myshopify.com",
+  "google_account_id": "123456789",
   "country": "US",
   "reporting_context": "SHOPPING_ADS",
   "content_language": "en",

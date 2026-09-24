@@ -19,3 +19,6 @@ jobs:
           commerce-incidents run fixtures/demo/day1 outputs/day1 --as-of 2026-09-24T12:00:00Z
           commerce-incidents run fixtures/demo/day2 outputs/day2 --as-of 2026-09-25T12:00:00Z --previous outputs/day1/report.json
           commerce-incidents verify fixtures/demo/day2 outputs/day2/report.json --previous outputs/day1/report.json
+          commerce-command outputs/desk.sqlite sync fixtures/demo/day1 --as-of 2026-09-24T12:00:00Z --actor ci-operator
+          commerce-command outputs/desk.sqlite sync fixtures/demo/day2 --as-of 2026-09-25T12:00:00Z --actor ci-operator
+          commerce-command outputs/desk.sqlite dashboard outputs/command.html

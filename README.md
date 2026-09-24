@@ -1,6 +1,6 @@
 # Commerce Incident Network
 
-**Find channel listing incidents, prioritize them with a transparent commerce-economics proxy, and observe whether they disappear in the next complete snapshot.** The first release is a read-only local CLI for a single USD merchant, country, and reporting context. It produces a review queue and a self-contained HTML dashboard from merchant-authorized snapshots. No store or ad-platform credentials are required for the demo; this release does **not** connect to live Shopify or Google accounts, subscribe to webhooks, or change listings.
+**Find channel listing incidents, prioritize them with a transparent commerce-economics proxy, assign a human fix, and observe whether the issue disappears in the next complete snapshot.** This is the open-source core of **A2Z Commerce Command**: a local pilot for one USD merchant, country, reporting context, language, and feed label. It includes read-only Shopify and Google Merchant API capture, a SQLite operator desk, an optional Merchant Profit OS economics adapter, and an offline dashboard. The connectors are implemented and tested with mocked API responses; they have **not** been exercised against a merchant account in this repository. There is no webhook listener, hosted service, or automated platform write.
 
 ```bash
 PYTHONPATH=src python3 -m commerce_incident_network run fixtures/demo/day1 outputs/day1 --as-of 2026-09-24T12:00:00Z
@@ -10,6 +10,18 @@ PYTHONPATH=src python3 -m unittest discover -s tests -v
 ```
 
 Open `outputs/day2/dashboard.html`. The demo begins with a disapproved book, a price mismatch, and an availability mismatch. The second complete snapshot shows the book and price incident absent while the availability mismatch continues. These are **fictional records**, and `resolved_observed` is not a claim about why the issue disappeared or how much revenue it recovered.
+
+Run the local operator workflow with the same fictional records:
+
+```bash
+PYTHONPATH=src python3 -m commerce_incident_network.desk_cli outputs/demo-desk.sqlite sync fixtures/demo/day1 --as-of 2026-09-24T12:00:00Z --actor operator
+PYTHONPATH=src python3 -m commerce_incident_network.desk_cli outputs/demo-desk.sqlite list --active-only
+# Use an ID from the list command for assign, approve, and record-fix.
+PYTHONPATH=src python3 -m commerce_incident_network.desk_cli outputs/demo-desk.sqlite sync fixtures/demo/day2 --as-of 2026-09-25T12:00:00Z --actor operator
+PYTHONPATH=src python3 -m commerce_incident_network.desk_cli outputs/demo-desk.sqlite dashboard outputs/demo-command.html
+```
+
+See [Commerce Command pilot architecture and runbook](docs/COMMERCE_COMMAND.md) for capture commands and the case workflow.
 
 ## Why this exists
 
@@ -37,6 +49,23 @@ flowchart LR
 ```
 
 ```mermaid
+flowchart LR
+    SH[Merchant-authorized Shopify read] --> CAP[Paginated atomic capture]
+    GO[Merchant-authorized Google processed products read] --> CAP
+    MAP[Explicit SKU-to-offer mapping] --> CAP
+    MP[Merchant Profit OS catalog and orders] --> ECON[Optional 30-day priority inputs]
+    ECON --> CAP
+    CAP --> SNAP[Immutable scoped snapshot]
+    SNAP --> DET[Deterministic incident engine]
+    DET --> DESK[(Local SQLite command desk)]
+    DESK --> OWN[Assign owner]
+    OWN --> APR[Separate human approval]
+    APR --> FIX[Owner records manual fix elsewhere]
+    FIX --> RE[New read-only capture]
+    RE --> DESK
+```
+
+```mermaid
 stateDiagram-v2
     [*] --> New: Issue first observed
     New --> Ongoing: Same issue in later complete snapshot
@@ -57,7 +86,7 @@ stateDiagram-v2
 | Unpublished storefront item live in channel | Storefront unpublished, channel approved and in stock | Review publication and listing intent |
 | Storefront missing | Mapped SKU absent from complete storefront snapshot | Check mapping and source export |
 
-Every incident has a stable ID based on merchant, country, reporting context, content language, feed label, SKU, and kind. `--previous` compares only the same scope and an older snapshot. The engine refuses incomplete, future-dated, or stale snapshots so that a partial export cannot masquerade as a resolution. The output contains SHA-256 hashes of source files. `verify` recomputes the report from those same files; it does not authenticate the original platform.
+Every incident has a stable ID based on merchant, source account IDs, country, reporting context, content language, feed label, SKU, and kind. `--previous` compares only the same scope and an older snapshot. The engine refuses incomplete, future-dated, or stale snapshots so that a partial export cannot masquerade as a resolution. The output contains SHA-256 hashes of source files. `verify` recomputes the report from those same files; it does not authenticate the original platform. Snapshot schema v1.1 adds source account IDs; existing v1.0 manifests need those fields before reuse.
 
 The optional priority proxy is `unit_margin_usd × units_sold_30d ÷ 30`. It uses historical sales velocity to order work within a severity class. It is **not** lost sales, causal revenue recovery, a forecast, or a reliable estimate for low-volume products. Missing economics produces a blank proxy, never a fabricated zero. Price and availability differences may be intentional promotions, backorders, or propagation lag; a human should decide the action.
 
@@ -69,13 +98,13 @@ The input contract is deliberately narrow: one merchant, one market, one reporti
 
 ## Existing A2Z components
 
-[Merchant Profit OS](https://github.com/AAH20/merchant-profit-os) supplies a separate catalog/economics reference. FeedOps uses the same **concept** of unit margin and sales velocity, but has no code-level or live data integration with that repository yet. [A2Z Commerce Cash Control](https://github.com/AAH20/a2z-commerce-cash-control) addresses order-to-ledger reconciliation; this project addresses storefront-to-channel listing incidents. Neither cash reconciliation nor channel incident resolution proves incremental sales. [AttentionOS Bench](https://github.com/AAH20/attentionos-bench) is a separate path for testing marketing effectiveness.
+[Merchant Profit OS](https://github.com/AAH20/merchant-profit-os) supplies a separate catalog/economics reference. The optional `economics-from-mpos` command now reads its published CSV contract to derive current modeled unit margin and gross 30-day units for mapped SKUs; this is a file-level adapter, not a live integration or realized contribution calculation. [A2Z Commerce Cash Control](https://github.com/AAH20/a2z-commerce-cash-control) addresses order-to-ledger reconciliation; this project addresses storefront-to-channel listing incidents. Neither cash reconciliation nor channel incident resolution proves incremental sales. [AttentionOS Bench](https://github.com/AAH20/attentionos-bench) remains a separate path for testing marketing effectiveness.
 
 ## Deployment sequence
 
-1. **Consented export pilot:** one merchant, one channel account, and a named human reviewer. Validate a complete product mapping and compare the queue with the channel's own diagnostics. Record false positives and operator minutes.
-2. **Read-only maintained adapters:** implement Shopify Admin GraphQL pagination and Google Merchant API processed-product pagination against merchant-granted credentials. Capture source timestamps, account IDs, scopes, pagination completion, API errors, and versioned field mappings. Google can lag after a product update, so treat the first snapshot after a fix as provisional. [Shopify API](https://shopify.dev/docs/api/admin-graphql/latest/queries/products) · [Google processed products](https://developers.google.com/merchant/api/reference/rest/products_v1/accounts.products/list)
-3. **Scheduled review:** authenticated agency workspace, scoped tenant storage, notifications, owner assignment, and a human approval log. Begin with recommendations; any write-back needs explicit merchant authorization and a separate rollback design.
+1. **Consented pilot:** one merchant, one channel account, a named owner and separate reviewer. Validate a complete product mapping and compare the queue with the channel's own diagnostics. Record false positives and operator minutes. The read-only adapters are present but require real account credentials and a field-mapping review before use. [Shopify API](https://shopify.dev/docs/api/admin-graphql/latest/queries/productVariants) · [Google processed products](https://developers.google.com/merchant/api/reference/rest/products_v1/accounts.products/list)
+2. **Operational hardening:** handle promotions, backorders, multichannel publication, currencies, variant/location inventory, OAuth refresh, API throttling, and channel processing delay. Google says processed products can lag after updates, so one absence in the next snapshot is an observation, not proof of causality. [Google processed products](https://developers.google.com/merchant/api/reference/rest/products_v1/accounts.products/list)
+3. **Hosted commercial operations:** authenticated agency workspace, tenant-scoped storage, webhook ingestion, notifications, signed human approvals, and support commitments. Any future write-back needs explicit merchant authorization, idempotency, rollback, and independent verification.
 4. **Broader channels:** add channel-specific adapters only after measured pilot precision. OpenAI shopping-feed onboarding is currently limited to approved partners; this repository does not claim access or certification. [OpenAI commerce guide](https://developers.openai.com/commerce/guides/get-started)
 
 The first pilot should measure incident precision against manually reviewed cases, time to detection and observed resolution, reviewer minutes per 100 products, and the fraction of mapped products covered by complete snapshots. For a commercial agency product, test whether multi-merchant operation reduces those minutes enough to pay for connector maintenance, support, and secure hosting. Growth through agencies is a distribution hypothesis, not a guaranteed network effect.

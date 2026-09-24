@@ -6,10 +6,13 @@ import argparse
 import csv
 import html
 import json
+import os
 import sys
 from pathlib import Path
 
 from .core import DataError, build_report
+from .capture import capture_snapshot
+from .economics import derive_mpos_economics
 
 
 def _cell(value: object) -> str:
@@ -69,8 +72,40 @@ def main(argv: list[str] | None = None) -> int:
     verify.add_argument("report", type=Path)
     verify.add_argument("--previous", type=Path)
     verify.add_argument("--max-age-hours", type=int, default=24)
+    capture = sub.add_parser("capture", help="Read Shopify and Merchant API into one complete local snapshot")
+    capture.add_argument("template", type=Path, help="Directory with mapping.csv and economics.csv")
+    capture.add_argument("output", type=Path, help="New immutable snapshot directory")
+    capture.add_argument("--shop-domain", required=True)
+    capture.add_argument("--google-account", required=True)
+    capture.add_argument("--merchant-id", required=True)
+    capture.add_argument("--country", required=True)
+    capture.add_argument("--context", default="SHOPPING_ADS")
+    capture.add_argument("--language", default="en")
+    capture.add_argument("--feed-label", required=True)
+    economics = sub.add_parser("economics-from-mpos", help="Derive optional priority inputs from Merchant Profit OS CSVs")
+    economics.add_argument("mpos_inputs", type=Path)
+    economics.add_argument("mapping", type=Path)
+    economics.add_argument("output", type=Path)
+    economics.add_argument("--as-of-date", required=True)
+    economics.add_argument("--market", required=True)
+    economics.add_argument("--attest-complete-orders", action="store_true")
     args = parser.parse_args(argv)
     try:
+        if args.command == "economics-from-mpos":
+            result = derive_mpos_economics(args.mpos_inputs, args.mapping, args.output,
+                as_of_date=args.as_of_date, market=args.market,
+                attest_complete_orders=args.attest_complete_orders)
+            print(json.dumps(result, sort_keys=True))
+            return 0
+        if args.command == "capture":
+            result = capture_snapshot(args.template, args.output, shop_domain=args.shop_domain,
+                                      account_id=args.google_account, merchant_id=args.merchant_id,
+                                      country=args.country, context=args.context, language=args.language,
+                                      feed_label=args.feed_label,
+                                      shop_token=os.environ.get("SHOPIFY_ADMIN_TOKEN", ""),
+                                      google_token=os.environ.get("GOOGLE_MERCHANT_ACCESS_TOKEN", ""))
+            print(json.dumps(result, sort_keys=True))
+            return 0
         previous = json.loads(args.previous.read_text(encoding="utf-8")) if args.previous else None
         if args.command == "run":
             report = build_report(args.inputs, args.as_of, previous, args.max_age_hours)
