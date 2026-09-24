@@ -1,0 +1,4 @@
+sku,price_usd,inventory_quantity,published
+BOOK-A,30.00,20,true
+MUG-B,18.00,8,true
+LAMP-C,45.00,0,true

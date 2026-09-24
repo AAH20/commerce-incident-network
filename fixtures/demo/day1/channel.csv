@@ -1,0 +1,4 @@
+offer_id,price_usd,availability,approval_status
+book-a,30.00,in_stock,disapproved
+mug-b,20.00,in_stock,approved
+lamp-c,45.00,in_stock,approved
